@@ -8,5 +8,6 @@ namespace WorkCounter.Data.Models
 		public int Distance { get; set; }
 		public DateTime DateTimeAdded { get; set; }
 		public long Millis { get; set; }
+		public string ClientIpAddress { get; set; }
 	}
 }

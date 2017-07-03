@@ -9,7 +9,7 @@ namespace WorkCounter
         public static void Main(string[] args)
         {
             var host = new WebHostBuilder()
-				.UseUrls("http://localhost:5006")
+				.UseUrls("http://192.168.1.172:5006")
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
