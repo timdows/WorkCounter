@@ -77,13 +77,14 @@ void loop() {
   Serial.print("cm");
   Serial.println();
 
+  lc.clearDisplay(0);
   setDisplayDistance(cm);
 
   // Send info to server
   if (cm < 160 && cm > 5) {
-    //sendToServer(cm);
+    sendToServer(cm);
   }
-  delay(250);
+  delay(50);
 }
 
 long microsecondsToCentimeters(long microseconds)
@@ -106,25 +107,37 @@ void sendToServer(long cm) {
 }
 
 void setDisplayDistance(long cm) {
-  byte c1 = 0;
-  byte c2 = 0;
-  byte c3 = 0;
-  byte c4 = 0;
-  
-  if (cm > 999) {
-    c4 = (byte)cm%10;
-    cm /= 10;
-  }
-  if (cm > 99) {
-    c3 = (byte)cm%10;
-    cm /= 10;
-  }
-  if (cm > 9) {
-    c2 = (byte)cm%10;
-    cm /= 10;
-  }
-  c1 = (byte)cm;
+  byte c1 = ' ';
+  char c2 = ' ';
+  char c3 = ' ';
+  char c4 = ' ';
 
+  if (cm < 10) {
+    c4 = (char)cm;
+  }
+  else if (cm < 100) {
+    c4 = (char)cm%10;
+    cm /= 10;
+    c3 = (char)cm;
+  }
+  else if (cm < 1000) {
+    c4 = (char)cm%10;
+    cm /= 10;
+    c3 = (char)cm%10;
+    cm /= 10;
+    c2 = (char)cm;
+  }
+  else {
+    c4 = (char)cm%10;
+    cm /= 10;
+    c3 = (char)cm%10;
+    cm /= 10;
+    c2 = (char)cm%10;
+    cm /= 10;
+    c1 = (char)cm;
+  }
+
+  
   lc.setDigit(0, 0, c4, false);
   lc.setDigit(0, 1, c3, false);
   lc.setDigit(0, 2, c2, false);
