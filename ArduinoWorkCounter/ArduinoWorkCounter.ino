@@ -1,13 +1,23 @@
-
-int trig = 4; // NodeMCU Pin D1 > TRIGGER 
-int echo = 5; // NodeMCU Pin D2 > ECHO
+//static const uint8_t D0   = 16;
+//static const uint8_t D1   = 5;
+//static const uint8_t D2   = 4;
+//static const uint8_t D3   = 0;
+//static const uint8_t D4   = 2;
+//static const uint8_t D5   = 14;
+//static const uint8_t D6   = 12;
+//static const uint8_t D7   = 13;
+//static const uint8_t D8   = 15;
+//static const uint8_t D9   = 3;
+//static const uint8_t D10  = 1;
 
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ESP8266HTTPClient.h>
+#include <NewPing.h>
+#include "LedControl.h"
 
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "ssid";
+const char* password = "pass";
 const char* nameOfHost = "workcounter-esp8266";
 
 const char* host = "";
@@ -17,8 +27,30 @@ const int httpsPort = 443;
 // SHA1 fingerprint of the certificate
 const char* fingerprint = "";
 
+NewPing sonar(D2, D1, 200);
+LedControl lc=LedControl(D7, D5, D8, 1); //DataIn, CLK, LOAD
+
 void setup()
 {
+  //The MAX72XX is in power-saving mode on startup, we have to do a wakeup call
+  lc.shutdown(0,false);
+  lc.shutdown(1,false);
+  //Set the brightness to a medium values
+  lc.setIntensity(0,8);
+  lc.setIntensity(1,8);
+  //and clear the display
+  lc.clearDisplay(0);
+  lc.clearDisplay(1);
+
+  lc.setDigit(0, 0, 8, false);
+  lc.setDigit(0, 1, 7, true);
+  lc.setDigit(0, 2, 6, false);
+  lc.setDigit(0, 3, 5, true);
+  lc.setDigit(0, 4, 4, false);
+  lc.setDigit(0, 5, 3, true);
+  lc.setDigit(0, 6, 2, false);
+  lc.setDigit(0, 7, 1, true);
+  
   Serial.begin(9600);
   Serial.println();
   Serial.print("connecting to ");
@@ -38,53 +70,21 @@ void setup()
   Serial.println(WiFi.localIP());
 }
 
-void loop()
-{
-  //digitalWrite(vcc, HIGH);
-  // establish variables for duration of the ping,
-  // and the distance result in inches and centimeters:
-  long duration, inches, cm;
-
-  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
-  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-  pinMode(trig, OUTPUT);
-  digitalWrite(trig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trig, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(trig, LOW);
-
-  // The same pin is used to read the signal from the PING))): a HIGH
-  // pulse whose duration is the time (in microseconds) from the sending
-  // of the ping to the reception of its echo off of an object.
-  pinMode(echo, INPUT);
-  duration = pulseIn(echo, HIGH);
-
-  // convert the time into a distance
-  //inches = microsecondsToInches(duration);
-  cm = microsecondsToCentimeters(duration);
-
-  //Serial.print(inches);
-  //Serial.print("in, ");
+void loop() {
+  //long cm = sonar.ping_cm();
+  long cm = sonar.convert_cm(sonar.ping_median(5));
   Serial.print(cm);
   Serial.print("cm");
   Serial.println();
 
+  setDisplayDistance(cm);
+
   // Send info to server
-  sendToServer2(cm);
-
-  delay(50);
+  if (cm < 160 && cm > 5) {
+    //sendToServer(cm);
+  }
+  delay(250);
 }
-
-//long microsecondsToInches(long microseconds)
-//{
-//// According to Parallax's datasheet for the PING))), there are
-//// 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
-//// second). This gives the distance travelled by the ping, outbound
-//// and return, so we divide by 2 to get the distance of the obstacle.
-//// See: http://www.parallax.com/dl/docs/prod/acc/28015-PI...
-//return microseconds / 74 / 2;
-//}
 
 long microsecondsToCentimeters(long microseconds)
 {
@@ -97,44 +97,36 @@ long microsecondsToCentimeters(long microseconds)
 void sendToServer(long cm) {
   HTTPClient http;
 
-  //Serial.print("[HTTP] begin...\n");
-  // configure traged server and url
-
-  
-  //String url = "/test.json";
-  String url = "https://" + String(host) + "/pass/insertvalue.json?deviceid=1&distance=" + String(cm) + "&millis=" + String(millis());
-  Serial.println(url);
-  http.begin(url, fingerprint); //HTTPS
-  
-  //Serial.print("[HTTP] GET...\n");
-  // start connection and send HTTP header
-  int httpCode = http.GET();
-
-  delay(1000);
-  // httpCode will be negative on error
-  if(httpCode > 0) {
-      // HTTP header has been send and Server response header has been handled
-      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-  
-      // file found at server
-      if(httpCode == HTTP_CODE_OK) {
-          String payload = http.getString();
-          Serial.println(payload);
-      }
-  } else {
-      Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-  }
-  
-  http.end();
-}
-
-void sendToServer2(long cm) {
-  HTTPClient http;
-
   String url = "/pass/InsertSingleValue.json?deviceid=1&distance=" + String(cm) + "&millis=" + String(millis());
   Serial.println(url);
   //http.begin("192.168.1.172", 5006, url, fingerprint);
   http.begin(host, 80, url);
   http.GET();
-   
+  http.end();
+}
+
+void setDisplayDistance(long cm) {
+  byte c1 = 0;
+  byte c2 = 0;
+  byte c3 = 0;
+  byte c4 = 0;
+  
+  if (cm > 999) {
+    c4 = (byte)cm%10;
+    cm /= 10;
+  }
+  if (cm > 99) {
+    c3 = (byte)cm%10;
+    cm /= 10;
+  }
+  if (cm > 9) {
+    c2 = (byte)cm%10;
+    cm /= 10;
+  }
+  c1 = (byte)cm;
+
+  lc.setDigit(0, 0, c4, false);
+  lc.setDigit(0, 1, c3, false);
+  lc.setDigit(0, 2, c2, false);
+  lc.setDigit(0, 3, c1, false);
 }
