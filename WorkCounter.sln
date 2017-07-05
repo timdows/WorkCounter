@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkCounter", "WorkCounter.csproj", "{27F62F16-07A2-48AD-B102-0F9AFDFC66E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkCounter", "WebAPI/WorkCounter.csproj", "{27F62F16-07A2-48AD-B102-0F9AFDFC66E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
